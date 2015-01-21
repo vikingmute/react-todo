@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>React Todo Demo</title>
+	<link ref="stylesheet" type="text/css" href="bower_components/normalize.css/normalize.css"/>
+	<script src="bower_components/react/react.js"></script>
+	<script src="bower_components/react/JSXTransformer.js"></script>
+	<script src="bower_components/showdown/compressed/Showdown.min.js"></script>
+	<style>
+		.output {
+			border: 1px solid #ccc;
+			background: #efefef;
+			border-radius: 3px;
+			padding: 20px;
+			width: 200px;
+			margin-bottom: 30px;
+		}
+		#preview3 {
+			width: 500px;
+			margin: 0 auto;
+		}
+		.header h3 {
+			float: left;
+		}
+		.header input {
+			float: left;
+			margin: 20px 0 0 40px;
+		}
+		textarea {
+			border: 1px solid #ccc;
+			width: 250px;
+			height: 100px;
+		}
+		.clearfix:before,
+		.clearfix:after {
+		  content: " ";
+		  display: table;
+		}
+
+		.clearfix:after {
+		  clear: both;
+		}
+	</style>
+</head>
+<body>
+	<div id="preview3" class="output"></div>
+
+	<script type="text/jsx">
+
+	var converter = new Showdown.converter();
+
+	var WordCount = React.createClass({
+		render: function() {
+			return <div className="wordCount">WordCount: {this.props.count}</div>;
+		}
+	});
+
+	var CommentBox = React.createClass({
+		getInitialState: function() {
+			return {text: '', count: 0};
+		},
+		changeText: function(e) {
+			var newText = e.target.value;
+			var commentText = this.refs.commentInput.getDOMNode().value;
+			var filterText = commentText.replace(/[^\w+\s+]/g, '');
+			var wordCount = filterText.length;
+			this.setState({text:newText, count: wordCount});
+		},
+		postComment: function(e) {
+			var commentInput = this.refs.commentInput.getDOMNode();
+			var commentRaw = this.refs.rawHTMLInput.getDOMNode();
+			var commentText = commentRaw.innerHTML;
+			this.props.sendComment(commentText);
+			commentInput.value = '';
+			this.setState({text: '', count: 0});
+		},
+		render: function() {
+			var rawMarkup = converter.makeHtml(this.state.text.toString());
+			return (
+				<div>
+				<textarea ref="commentInput" defaultValue={this.state.text} placeholder={this.props.text} onChange={this.changeText}></textarea><br/>
+				<input type="button" defaultValue="Post" onClick={this.postComment}/>
+				<p>You can use Markdown code for simple preview</p>
+				<p>Preview: <br/>
+				<span ref="rawHTMLInput" dangerouslySetInnerHTML={{__html: rawMarkup}} />
+				</p>
+				<WordCount count={this.state.count}/>
+				</div>	
+			)
+		}
+	});
+
+	var CommentList = React.createClass({
+		deleteComment: function(index) {
+			this.props.deleteComment(index);
+		},
+		drawSingle: function(text, i) {
+			var boundClick = this.deleteComment.bind(this, i);
+			return (<div>
+					<div className="header clearfix">
+					<h3 className="text">Plan {i+1} </h3>
+					<input type="button" value="Delete" onClick={boundClick} key={i}/>
+					</div>
+					<span  dangerouslySetInnerHTML={{__html: text}} />
+					</div>);
+		},
+		render: function() {
+			var drawSingle = this.drawSingle;
+			return <ul>{this.props.items.map(drawSingle)}</ul>;
+		}
+	});
+
+
+	var TodoApp = React.createClass({
+		getInitialState: function() {
+			return {items: ['my name is viking', 'give me another']};
+		},
+		handleDeleteComment: function(index) {
+			this.state.items.splice(index, 1);
+			var newItems = this.state.items;
+			this.setState({items: newItems});
+		},
+		handlePostComment: function(value) {
+			var newItems = this.state.items.concat([value]);
+			this.setState({items: newItems});
+		},
+		render: function() {
+			return (
+				<div>
+				<h1>My plans about next week</h1>
+				<CommentList items={this.state.items} deleteComment={this.handleDeleteComment}/>
+				<CommentBox text="Type your text here" sendComment={this.handlePostComment}/>
+				</div>
+			)
+		}
+	});
+	React.render(
+		<TodoApp/>,
+		document.getElementById('preview3')
+	);
+	</script>
+</body>
+</html>
